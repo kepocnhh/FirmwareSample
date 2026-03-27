@@ -14,6 +14,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import java.io.File
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
@@ -72,6 +73,11 @@ internal class FinalAdmins(
                         },
                     )
                 }
+                ApiTool.CommonEvent.UPDATE_SYSTEM_OTA -> {
+                    logger.debug("iArray: ${iArray?.toList()}")
+                    logger.debug("progress: $progress")
+                    logger.debug("value: $value")
+                }
             }
         }
     }
@@ -109,8 +115,12 @@ internal class FinalAdmins(
     }
 
     override fun test() {
-//        ApiTool.CommonEvent.UPDATE_SYSTEM_OTA
         val actionId = ApiTool.CommonEvent.GET_SCREEN_SIGNAL_BRIGHTNESS
         SdkApi.getInstance().CommonEvent().setCommonEvent(pid, actionId, "", intArrayOf(), 0)
+    }
+
+    override fun ota(file: File) {
+        val actionId = ApiTool.CommonEvent.UPDATE_SYSTEM_OTA
+        SdkApi.getInstance().CommonEvent().setCommonEvent(pid, actionId, file.absolutePath, intArrayOf(1), 1)
     }
 }
