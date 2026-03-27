@@ -69,6 +69,16 @@ internal fun MainScreen() {
                     text = "remove admin",
                 )
             }
+            BasicText(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clickable {
+                        providers.admins.test()
+                    }
+                    .wrapContentSize(),
+                text = "test",
+            )
         }
     }
 }

@@ -11,4 +11,5 @@ internal interface Admins {
 
     fun update(isDeviceOwner: Boolean)
     fun getDeviceInfo(): DeviceInfo
+    fun test()
 }

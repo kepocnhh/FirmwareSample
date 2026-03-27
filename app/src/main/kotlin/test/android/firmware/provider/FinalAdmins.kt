@@ -3,6 +3,8 @@ package test.android.firmware.provider
 import android.app.admin.DevicePolicyManager
 import android.content.Context
 import com.sdkapi.api.SdkApi
+import com.sdkapi.common.ApiTool
+import com.sdkapi.sdkapiservice.ISdkCommonListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -10,7 +12,9 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import java.io.InputStream
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.milliseconds
@@ -20,7 +24,9 @@ internal class FinalAdmins(
     private val context: Context,
     private val coroutineScope: CoroutineScope,
     private val default: CoroutineContext,
+    loggers: Loggers,
 ) : Admins {
+    private val logger = loggers.create("[Admins]")
     override val owners = object : StateFlow<Boolean> {
         override val value: Boolean
             get() {
@@ -43,14 +49,46 @@ internal class FinalAdmins(
         }
     }
 
+    private val listener : ISdkCommonListener = object : ISdkCommonListener.Stub() {
+        override fun CommonListenerNotify(
+            actionId: Int,
+            value: String?,
+            iArray: IntArray?,
+            progress: Int,
+        ) {
+            logger.debug("action: $actionId")
+            when (actionId) {
+                ApiTool.CommonEvent.GET_SCREEN_SIGNAL_BRIGHTNESS -> {
+                    logger.debug("iArray: ${iArray?.toList()}")
+                    logger.debug("progress: $progress")
+                    runCatching {
+                        value!!.toInt()
+                    }.fold(
+                        onSuccess = {
+                            logger.debug("brightness: $it")
+                        },
+                        onFailure = { error ->
+                            logger.warning("get brightness error: $error")
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    private val pid = android.os.Process.myPid()
+
     init {
         SdkApi.newInstance(context)
         coroutineScope.launch {
-            withTimeout(4.seconds) {
-                while (isActive) {
-                    if (SdkApi.getInstance().serviceConnectionStatus) break
-                    delay(250.milliseconds)
+            withContext(default) {
+                withTimeout(4.seconds) {
+                    while (isActive) {
+                        if (SdkApi.getInstance().serviceConnectionStatus) break
+                        delay(250.milliseconds)
+                    }
                 }
+                SdkApi.getInstance().CommonEvent().registerCommonListener(pid, listener)
             }
         }
     }
@@ -68,5 +106,11 @@ internal class FinalAdmins(
         return Admins.DeviceInfo(
             serialNumber = di.serialNumber,
         )
+    }
+
+    override fun test() {
+//        ApiTool.CommonEvent.UPDATE_SYSTEM_OTA
+        val actionId = ApiTool.CommonEvent.GET_SCREEN_SIGNAL_BRIGHTNESS
+        SdkApi.getInstance().CommonEvent().setCommonEvent(pid, actionId, "", intArrayOf(), 0)
     }
 }
