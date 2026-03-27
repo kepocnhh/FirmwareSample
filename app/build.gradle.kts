@@ -54,6 +54,7 @@ androidComponents.onVariants { variant ->
 }
 
 dependencies {
+    implementation(files("lib/sdk-V1.250217.0851.aar"))
     implementation(compose.foundation)
     implementation("androidx.activity:activity-compose:1.13.0")
 }

@@ -11,17 +11,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.withContext
+import test.android.firmware.provider.Admins
 
 @Composable
 internal fun MainScreen() {
     val providers = remember { App.providers }
     val isDeviceOwner = providers.admins.owners.collectAsState().value
+    val devices = remember { mutableStateOf<Admins.DeviceInfo?>(null) }
+    LaunchedEffect(Unit) {
+        withContext(providers.contexts.default) {
+            devices.value = providers.admins.getDeviceInfo()
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -32,6 +42,15 @@ internal fun MainScreen() {
                 .fillMaxWidth()
                 .align(Alignment.Center),
         ) {
+            val deviceInfo = devices.value
+            if (deviceInfo != null) {
+                BasicText(
+                    modifier = Modifier
+                        .fillMaxWidth(1f)
+                        .padding(16.dp),
+                    text = "serial number: ${deviceInfo.serialNumber}",
+                )
+            }
             BasicText(
                 modifier = Modifier
                     .fillMaxWidth(1f)
